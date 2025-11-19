@@ -69,8 +69,10 @@ masks=getMaskClass(masks)
 masks=np.array(masks)
 
 X=np.array([hue.reshape(-1,1) for hue in hues])
-classes=masks[:,:,:,3]
+y=masks[:,:,:,3]
 
-roadX=seperateByClass(X,classes,0)
-
-print(roadX)
+roadX=seperateByClass(X,y,0)
+markingX=seperateByClass(X,y,1)
+signsX=seperateByClass(X,y,2)
+carsX=seperateByClass(X,y,3)
+backgroundX=seperateByClass(X,y,4)
