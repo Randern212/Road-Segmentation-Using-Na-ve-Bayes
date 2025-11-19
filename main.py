@@ -40,14 +40,31 @@ def getMaskClass(maskImages):
         for color, class_id in color_map.items():
             mask = np.all(image == color, axis=2)
             classes[mask] = class_id
-                
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)        
         classifiedImage = np.concatenate([image, classes], axis=2)
         classifiedMasks.append(classifiedImage)
     
     return classifiedMasks
+
+def naiveBayes(imgs,masks,method,bins):
+    pass
 #=======================================================================================================================
 
 imgs = loadDataset("train/images",True)
+imgsNP=np.array(imgs)
+
+hues=imgsNP[:, :, :, 0].astype(np.float32) * 2
 
 masks = loadDataset("train/masks")
 masks=getMaskClass(masks)
+masks=np.array(masks)
+
+classes=masks[:,:,:,3]
+
+roadY=np.array(classes)[classes==0]
+X=np.array([hue.reshape(-1,1) for hue in hues])
+roadX=[]
+for image,mask in zip(X,roadY):
+    roadX.append(image[mask==0])
+roadX=np.array(roadX)
+print(roadX)
