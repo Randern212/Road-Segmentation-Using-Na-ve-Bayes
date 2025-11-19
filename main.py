@@ -20,33 +20,31 @@ def loadDataset(path,hsv:bool=False):
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
                 imgs.append(img)
     return imgs
-
+        
 def getMaskClass(maskImages):
-    classifiedMasks=[]
+    classifiedMasks = []
+    color_map = {
+        (61, 61, 245): 0,
+        (221, 255, 51): 1, 
+        (255, 53, 94): 2,
+        (255, 204, 51): 3,
+        (184, 61, 245): 4
+    }
+    
     for image in maskImages:
-        image=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-        for pixelRow in image:
-            for pixel in pixelRow:
-                maskClass=classifyPixel(pixel)
-                classifiedPixel=np.append(pixel,maskClass)
-                classifiedMasks.append(classifiedPixel)
-    return classifiedMasks
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        h, w = image.shape[:2]
+        
+        classes = np.full((h, w, 1),5, dtype=np.uint8)
+        
+        for color, class_id in color_map.items():
+            mask = np.all(image == color, axis=2)
+            classes[mask] = class_id
                 
-def classifyPixel(pixel):
-    pixelList=pixel.tolist()
-    match pixelList:
-        case [61, 61, 245]:
-            return 0
-        case [221, 255, 51]:
-            return 1
-        case [255, 53, 94]:
-            return 2
-        case [255, 204, 51]:
-            return 3
-        case [184, 61, 245]:
-            return 4
-        case _:
-            return 5
+        classifiedImage = np.concatenate([image, classes], axis=2)
+        classifiedMasks.append(classifiedImage)
+    
+    return classifiedMasks
 #=======================================================================================================================
 
 imgs = loadDataset("train/images",True)
