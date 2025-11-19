@@ -46,6 +46,15 @@ def getMaskClass(maskImages):
     
     return classifiedMasks
 
+def seperateByClass(x,classes,targetClass):
+    Y=np.array(classes)[classes==0]
+    resultantX=[]
+
+    for image,mask in zip(x,Y):
+        resultantX.append(image[mask==targetClass])
+    resultantX=np.array(resultantX).flatten()
+    return resultantX
+
 def naiveBayes(imgs,masks,method,bins):
     pass
 #=======================================================================================================================
@@ -59,12 +68,9 @@ masks = loadDataset("train/masks")
 masks=getMaskClass(masks)
 masks=np.array(masks)
 
+X=np.array([hue.reshape(-1,1) for hue in hues])
 classes=masks[:,:,:,3]
 
-roadY=np.array(classes)[classes==0]
-X=np.array([hue.reshape(-1,1) for hue in hues])
-roadX=[]
-for image,mask in zip(X,roadY):
-    roadX.append(image[mask==0])
-roadX=np.array(roadX)
+roadX=seperateByClass(X,classes,0)
+
 print(roadX)
