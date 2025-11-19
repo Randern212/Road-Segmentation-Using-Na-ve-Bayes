@@ -47,7 +47,7 @@ def getMaskClass(maskImages):
     return classifiedMasks
 
 def seperateByClass(x,classes,targetClass):
-    Y=np.array(classes)[classes==0]
+    Y=np.array(classes)[classes==targetClass]
     resultantX=[]
 
     for image,mask in zip(x,Y):
@@ -55,8 +55,27 @@ def seperateByClass(x,classes,targetClass):
     resultantX=np.array(resultantX).flatten()
     return resultantX
 
-def naiveBayes(imgs,masks,method,bins):
-    pass
+def naiveBayes(targetX,targetName:str,X,restOfX,method):
+    model={}
+    decidedLikelihood:callable=None
+    nonTargetName="non"+targetName
+    if method==bayesType.Gaussian:
+        model={
+            targetName:{
+                "prior":len(targetX)/len(X),
+                "mean":np.mean(targetX),
+                "var":np.var(targetX)
+            },
+            nonTargetName:{
+                "prior":len(restOfX)/len(X),
+                "mean":np.mean(restOfX),
+                "var":np.var(restOfX)
+            }
+        }
+        def likelihood(x, mean, var):
+            return (1 / np.sqrt(2 * np.pi * var)) * np.exp(- (x - mean)**2 / (2 * var))
+        decidedLikelihood=likelihood
+    return model,decidedLikelihood
 #=======================================================================================================================
 
 imgs = loadDataset("train/images",True)
