@@ -1,7 +1,7 @@
 from enum import Enum
 import os
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
 import cv2
 class  bayesType(Enum):
     Gaussian=0
@@ -51,7 +51,6 @@ def naiveBayes(X,targetClass,targetName,y,method,bins):
     classHues=X[classMask]
     nonClassMask=(y!=targetClass)
     nonClassHues=X[nonClassMask]
-    if method==bayesType.Gaussian
     model={}
     nonTargetName="non"+targetName
     if method==bayesType.Gaussian:
@@ -70,11 +69,51 @@ def naiveBayes(X,targetClass,targetName,y,method,bins):
             def likelihood(x, mean, var):
                 return (1 / np.sqrt(2 * np.pi * var)) * np.exp(- (x - mean)**2 / (2 * var))
     else:
+        classHist, classEdges = np.histogram(classHues, bins=bins, range=(0, 360), density=True)
+        nonClassHist, nonClassEdges = np.histogram(nonClassHues, bins=bins, range=(0, 360), density=True)
+        centers = 0.5 * (classEdges[:-1] + classEdges[1:])
+        
+        model = {
+            "road": {
+                "prior": len(classHues) / len(X),
+                "hist": classHist,
+                "centers": centers
+            },
+            "non_road": {
+                "prior": len(nonClassHist) / len(X),
+                "hist": nonClassHist,
+                "centers": centers
+            }
+        }
         def likelihood(x, hist, centers):
             idx = np.searchsorted(centers, x, side="right") - 1
-            idx = np.clip(idx, 0, len(hist) - 1)
+            # idx = np.clip(idx, 0, len(hist) - 1)
             return hist[idx]
     return model, likelihood
+
+def segmentImage(imagePath,targetName, model, likelihood, method):
+    nonTargetName="non"+targetName
+    imageBGR = cv2.imread(imagePath)
+    imgHSV = cv2.cvtColor(imageBGR, cv2.COLOR_BGR2HSV)
+    
+    hue = imgHSV[:, :, 0].astype(np.float32) * 2
+    H, W = hue.shape
+    
+    testX = hue.flatten()
+    
+    if method == bayesType.Gaussian:
+        targetP = model[targetName]["prior"] * likelihood(testX, model[targetName]["mean"], model[targetName]["var"])
+        nonTargetP = model[nonTargetName]["prior"] * likelihood(testX, model[nonTargetName]["mean"], model[nonTargetName]["var"])
+    else:
+        targetP = model[targetName]["prior"] * likelihood(testX, model[targetName]["hist"], model[targetName]["centers"])
+        nonTargetP = model[nonTargetName]["prior"] * likelihood(testX, model[nonTargetName]["hist"], model[nonTargetName]["centers"])
+    
+    targetMask = (targetP > nonTargetP).astype(np.uint8)
+    targetMask = targetMask.reshape(H, W)
+    
+    result = targetMask * 255
+    
+    return result
 #=======================================================================================================================
 
 imgs = loadDataset("train/images",True)
@@ -91,6 +130,19 @@ y = masksNP.flatten()
 
 method = bayesType.Histogram  
 bins = 50
+targetName="road"    
+model, likelihood = naiveBayes(X,0,targetName, y, method, bins)
+
+testImg = "test.jpg"
+
+if os.path.exists(testImg):
     
-model, likelihood_fn = naiveBayes(X, y, method, bins)
-    
+    result = segmentImage(testImg, targetName, model, likelihood, method)
+        
+    plt.figure(figsize=(15, 5))
+         
+    plt.plot()
+    plt.imshow(result, cmap='gray')
+    plt.title("Road Segmentation\n(White = Road, Black = Non-road)")
+        
+    plt.show()
