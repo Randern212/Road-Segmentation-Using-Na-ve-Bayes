@@ -46,36 +46,35 @@ def getMaskClass(maskImages):
     
     return classifiedMasks
 
-def seperateByClass(x,classes,targetClass):
-    Y=np.array(classes)[classes==targetClass]
-    resultantX=[]
-
-    for image,mask in zip(x,Y):
-        resultantX.append(image[mask==targetClass])
-    resultantX=np.array(resultantX).flatten()
-    return resultantX
-
-def naiveBayes(targetX,targetName:str,X,restOfX,method):
+def naiveBayes(X,targetClass,targetName,y,method,bins):
+    classMask=(y==targetClass)
+    classHues=X[classMask]
+    nonClassMask=(y!=targetClass)
+    nonClassHues=X[nonClassMask]
+    if method==bayesType.Gaussian
     model={}
-    decidedLikelihood:callable=None
     nonTargetName="non"+targetName
     if method==bayesType.Gaussian:
-        model={
-            targetName:{
-                "prior":len(targetX)/len(X),
-                "mean":np.mean(targetX),
-                "var":np.var(targetX)
-            },
-            nonTargetName:{
-                "prior":len(restOfX)/len(X),
-                "mean":np.mean(restOfX),
-                "var":np.var(restOfX)
+            model={
+                targetName:{
+                    "prior":len(classHues)/len(X),
+                    "mean":np.mean(classHues),
+                    "var":np.var(classHues)
+                },
+                nonTargetName:{
+                    "prior":len(nonClassHues)/len(X),
+                    "mean":np.mean(nonClassHues),
+                    "var":np.var(nonClassHues)
+                }
             }
-        }
-        def likelihood(x, mean, var):
-            return (1 / np.sqrt(2 * np.pi * var)) * np.exp(- (x - mean)**2 / (2 * var))
-        decidedLikelihood=likelihood
-    return model,decidedLikelihood
+            def likelihood(x, mean, var):
+                return (1 / np.sqrt(2 * np.pi * var)) * np.exp(- (x - mean)**2 / (2 * var))
+    else:
+        def likelihood(x, hist, centers):
+            idx = np.searchsorted(centers, x, side="right") - 1
+            idx = np.clip(idx, 0, len(hist) - 1)
+            return hist[idx]
+    return model, likelihood
 #=======================================================================================================================
 
 imgs = loadDataset("train/images",True)
@@ -85,13 +84,13 @@ hues=imgsNP[:, :, :, 0].astype(np.float32) * 2
 
 masks = loadDataset("train/masks")
 masks=getMaskClass(masks)
-masks=np.array(masks)
+masksNP=np.array(masks)
 
-X=np.array([hue.reshape(-1,1) for hue in hues])
-y=masks[:,:,:,3]
+X = hues.flatten()  
+y = masksNP.flatten()
 
-roadX=seperateByClass(X,y,0)
-markingX=seperateByClass(X,y,1)
-signsX=seperateByClass(X,y,2)
-carsX=seperateByClass(X,y,3)
-backgroundX=seperateByClass(X,y,4)
+method = bayesType.Histogram  
+bins = 50
+    
+model, likelihood_fn = naiveBayes(X, y, method, bins)
+    
