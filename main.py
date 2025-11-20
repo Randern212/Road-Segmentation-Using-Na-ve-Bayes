@@ -74,20 +74,20 @@ def naiveBayes(X,targetClass,targetName,y,method,bins):
         centers = 0.5 * (classEdges[:-1] + classEdges[1:])
         
         model = {
-            "road": {
+            targetName: {
                 "prior": len(classHues) / len(X),
                 "hist": classHist,
                 "centers": centers
             },
-            "non_road": {
-                "prior": len(nonClassHist) / len(X),
+            nonTargetName: {
+                "prior": len(nonClassHues) / len(X),
                 "hist": nonClassHist,
                 "centers": centers
             }
         }
         def likelihood(x, hist, centers):
             idx = np.searchsorted(centers, x, side="right") - 1
-            # idx = np.clip(idx, 0, len(hist) - 1)
+            idx = np.clip(idx, 0, len(hist) - 1)
             return hist[idx]
     return model, likelihood
 
@@ -126,7 +126,7 @@ masks=getMaskClass(masks)
 masksNP=np.array(masks)
 
 X = hues.flatten()  
-y = masksNP.flatten()
+y = masksNP[:, :, :, 3].flatten()
 
 method = bayesType.Histogram  
 bins = 50
